@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import os
 from sqlalchemy import create_engine
 import pandas as pd
@@ -21,10 +18,6 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
-# In[2]:
-
-
 POSTGRES = {
 
 'user' : 'postgres',
@@ -33,10 +26,6 @@ POSTGRES = {
 'port' : '5432',
 'db' : 'soccerdata'
 }
-
-
-# In[3]:
-
 
 class Config(object):
     # ...
@@ -47,23 +36,9 @@ config = Config()
 
 cnx = create_engine(config.SQLALCHEMY_DATABASE_URI)
 
-
-# In[4]:
-
-
 df = pd.read_sql_query('''
 SELECT f.*, l.event_date, l.home_goals, l.away_goals, l.home_team, l.home_team_id, l.away_team, l.away_team_id 
 FROM fixture f left join league l on l.fixture_id = f.fixture_id;''', cnx)
-
-
-# In[5]:
-
-
-df
-
-
-# In[6]:
-
 
 df.rename(columns={'home_goals': 'goals_home', 'away_goals': 'goals_away'}, inplace=True)
 
@@ -76,10 +51,6 @@ df['away_wld'] = np.select(conditions, values_away)
 
 df = df.sort_values('event_date')
 df.reset_index(inplace=True, drop=True)
-
-
-# In[7]:
-
 
 def get_goals_scored(df, team):
     mask_home = np.where(df['home_team'] == team)
@@ -103,10 +74,6 @@ def get_goals_taken(df, team):
     goals_taken = pd.concat([goals_taken_home, goals_taken_away]).sort_values(by='event_date')
     
     return goals_taken
-
-
-# In[8]:
-
 
 def expanding_average_goals(df):
     
@@ -142,10 +109,6 @@ def expanding_average_goals(df):
         
     return df
 
-
-# In[9]:
-
-
 def get_stat(df, team, stat):
     mask_home = np.where(df['home_team'] == team)
     mask_away = np.where(df['away_team'] == team)
@@ -161,10 +124,6 @@ def get_stat(df, team, stat):
     
     return stat_team
 
-
-# In[10]:
-
-
 def expanding_average_stat(df, stat):
     
     for team in np.unique(list(df['home_team'].values) + list(df['away_team'].values)):
@@ -174,8 +133,8 @@ def expanding_average_stat(df, stat):
 
         res, res_home, res_away = pd.Series(get_stat(df_team, team, stat))
         res = res.expanding(1).mean().shift()
-        res_home = res.expanding(1).mean().shift()
-        res_away = res_away.expanding(1).mean().shift()
+        # res_home = res.expanding(1).mean().shift()
+        # res_away = res_away.expanding(1).mean().shift()
 
         df_team.loc[np.where(df_team['home_team'] == team)[0], 'is_home'] = True
         df_team.loc[np.where(df_team['home_team'] != team)[0], 'is_home'] = False
@@ -203,10 +162,6 @@ def expanding_average_stat(df, stat):
         
     return df
 
-
-# In[11]:
-
-
 def get_stat(df, team, stat):
     mask_home = np.where(df['home_team'] == team)
     mask_away = np.where(df['away_team'] == team)
@@ -222,10 +177,6 @@ def get_stat(df, team, stat):
     
     return stat_team, stat_home, stat_away
 
-
-# In[23]:
-
-
 team = 'Manchester United'
 stat = 'shots_on_goal_home'
 team_mask = np.where((df['home_team'] == team) | (df['away_team'] == team))
@@ -234,16 +185,6 @@ df_team.reset_index(inplace=True, drop=False)
 
 res, res_home, res_away = pd.Series(get_stat(df_team, team, stat))
 res = res.expanding(1).mean().shift()
-
-
-# In[25]:
-
-
-res_home
-
-
-# In[24]:
-
 
 cols = ['shots_on_goal_home', 'shots_on_goal_away','shots_off_goal_home', 'shots_off_goal_away', 'total_shots_home',
         'total_shots_away', 'blocked_shots_home', 'blocked_shots_away','shots_insidebox_home', 'shots_insidebox_away', 
@@ -263,10 +204,7 @@ df.dropna(axis=0, how='any', inplace=True)
 
 # ## Classification
 
-# In[20]:
-
-
-features = ['overall_average_goals_scored_home', 'overall_average_goals_taken_home', 'overall_average_goals_scored_away', 
+features = ['overall_average_goals_scored_home', 'overall_average_goals_taken_home', 'overall_average_goals_scored_away',
             'overall_average_goals_taken_away', 'overall_average_shots_on_goal_home', 'overall_average_shots_on_goal_away',
             'overall_average_shots_off_goal_home', 'overall_average_shots_off_goal_away', 'overall_average_total_shots_home', 
             'overall_average_total_shots_away', 'overall_average_blocked_shots_home', 
@@ -291,19 +229,11 @@ y_test = y[idx_train:]
 X_train = X.iloc[:idx_train,:]
 X_test = X.iloc[idx_train:,:]
 
-
-# In[27]:
-
-
 ### Unbalanced dataset
 
 print('% of home wins: ', len(np.where(y_train == 0)[0]) / len(y_train))
 print('% of draws: ', len(np.where(y_train == 1)[0]) / len(y_train))
 print('% of home loss: ', len(np.where(y_train == 2)[0]) / len(y_train))
-
-
-# In[295]:
-
 
 features_pipeline = Pipeline(steps=[('scaler', StandardScaler())])
 
@@ -316,15 +246,7 @@ pipeline.fit(X_train, y_train)
 
 y_pred = pipeline.predict(X_test)
 
-
-# In[296]:
-
-
 accuracy_score(y_pred, y_test)
-
-
-# In[297]:
-
 
 # target_pipeline = Pipeline(steps=[('categorical', LabelEncoder())])
 # targetCol = 'home_wld'
@@ -337,15 +259,7 @@ pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', clf)])
 pipeline.fit(X_train, y_train)
 y_pred = pipeline.predict(X_test)
 
-
-# In[298]:
-
-
 accuracy_score(y_pred, y_test)
-
-
-# In[299]:
-
 
 # target_pipeline = Pipeline(steps=[('categorical', LabelEncoder())])
 # targetCol = 'home_wld'
@@ -358,15 +272,7 @@ pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', clf)])
 pipeline.fit(X_train, y_train)
 y_pred = pipeline.predict(X_test)
 
-
-# In[300]:
-
-
 accuracy_score(y_pred, y_test)
-
-
-# In[308]:
-
 
 param_search = { 
     'model__n_estimators': [200, 500],
@@ -387,16 +293,8 @@ gsearch = GridSearchCV(estimator=pipeline, cv=tscv,
                         param_grid=param_search)
 gsearch.fit(X_train, y_train)
 
-
-# In[309]:
-
-
 print("Best parameter (CV score=%0.3f):" % gsearch.best_score_)
 print(gsearch.best_params_)
-
-
-# In[310]:
-
 
 features_pipeline = Pipeline(steps=[('scaler', StandardScaler())])
 
@@ -408,16 +306,8 @@ clf = RandomForestClassifier(max_depth=gsearch.best_params_['model__max_depth'],
 pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', clf)])
 pipeline.fit(X_train, y_train)
 
-
-# In[311]:
-
-
 y_pred = pipeline.predict(X_test)
 print(accuracy_score(y_pred, y_test))
-
-
-# In[316]:
-
 
 param_search = { 
     'model__C': np.arange(10**-3, 10**1, 10**-1),
@@ -435,10 +325,6 @@ gsearch = GridSearchCV(estimator=pipeline, cv=tscv,
                         param_grid=param_search)
 gsearch.fit(X, y)
 y_pred = pipeline.predict(X_test)
-
-
-# In[317]:
-
 
 print("Best parameter (CV score=%0.3f):" % gsearch.best_score_)
 print(gsearch.best_params_)
